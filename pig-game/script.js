@@ -1,5 +1,15 @@
 "use strict";
 
+// player info
+const playerZeroElement = document.querySelector(".player--0");
+const playerOneElement = document.querySelector(".player--1");
+
+const playerZeroCurrent = document.querySelector("#current--0");
+const playerOneCurrent = document.querySelector("#current--1");
+
+const playerZeroTotal = document.querySelector("#total--0");
+const playerOneTotal = document.querySelector("#total--1");
+
 // dice image
 const diceImageElement = document.querySelector(".dice");
 
@@ -8,22 +18,33 @@ const rollDiceBtn = document.querySelector(".btn--roll");
 const holdScoreBtn = document.querySelector(".btn--hold");
 const newGameBtn = document.querySelector(".btn--new");
 
-let activePlayerIndex = 0;
-let currentScore = 0;
-let totalScores = [0, 0];
+// game state
+let activePlayerIndex;
+let currentScore;
+let totalScores = [];
 
 // setting up the game on page load
 window.onload = function () {
   initializeGame();
 };
 
-// game initialization, all scores are set to 0, the dice is hidden
+// all scores are set to 0 (the state variables, as well as the UI elements)
+// player0 is active
+// the dice is hidden
+// event listeners are attached
 function initializeGame() {
-  document.querySelector("#current--0").textContent = 0;
-  document.querySelector("#current--1").textContent = 0;
+  currentScore = 0;
+  totalScores = [0, 0];
+  activePlayerIndex = 0;
 
-  document.querySelector("#total--0").textContent = 0;
-  document.querySelector("#total--1").textContent = 0;
+  playerZeroCurrent.textContent = 0;
+  playerOneCurrent.textContent = 0;
+
+  playerZeroTotal.textContent = 0;
+  playerOneTotal.textContent = 0;
+
+  playerZeroElement.classList.add("player--active");
+  playerOneElement.classList.remove("player--active");
 
   diceImageElement.classList.add("hidden");
 
@@ -31,18 +52,29 @@ function initializeGame() {
   holdScoreBtn.addEventListener("click", holdCurrentScore);
 }
 
-// sets the current player as inactive in favor of the other
+function updateCurrentScore() {
+  activePlayerIndex === 0
+    ? (playerZeroCurrent.textContent = currentScore)
+    : (playerOneCurrent.textContent = currentScore);
+}
+
+function updateTotalScore() {
+  activePlayerIndex === 0
+    ? (playerZeroTotal.textContent = totalScores[0])
+    : (playerOneTotal.textContent = totalScores[1]);
+}
+
+// sets the currentScore to 0 and updates the UI
+// adds the active class if it's not present
+// and removes it if it's present
 function changeTurn() {
-  const nextPlayerIndex = activePlayerIndex == 1 ? 0 : 1;
+  currentScore = 0;
+  updateCurrentScore();
 
-  document
-    .querySelector(`.player--${activePlayerIndex}`)
-    .classList.remove("player--active");
-  document
-    .querySelector(`.player--${nextPlayerIndex}`)
-    .classList.add("player--active");
+  playerZeroElement.classList.toggle("player--active");
+  playerOneElement.classList.toggle("player--active");
 
-  activePlayerIndex = nextPlayerIndex;
+  activePlayerIndex = activePlayerIndex === 1 ? 0 : 1;
 }
 
 function rollTheDice() {
@@ -53,22 +85,25 @@ function rollTheDice() {
   // gets the current score of the active player and increses it with the dice number
   if (diceNum !== 1) {
     currentScore += diceNum;
-    updateGame();
+    updateCurrentScore();
   } else {
-    currentScore = 0;
-    updateGame();
     changeTurn();
   }
 }
 
-// adds the current score to the total and checks if the player has won
+// adds the current score to the total and if the total points of the player are 100 or more they win
 function holdCurrentScore() {
   totalScores[activePlayerIndex] += currentScore;
-  currentScore = 0;
-  updateGame();
+  updateTotalScore();
 
-  if (hasWon()) {
+  if (totalScores[activePlayerIndex] >= 100) {
+    document
+      .querySelector(`.player--${activePlayerIndex}`)
+      .classList.add("player--winner");
+
     diceImageElement.classList.add("hidden");
+
+    // deactivate buttons when there's a winner
     rollDiceBtn.removeEventListener("click", rollTheDice);
     holdScoreBtn.removeEventListener("click", holdCurrentScore);
   } else {
@@ -76,33 +111,10 @@ function holdCurrentScore() {
   }
 }
 
-function updateGame() {
-  document.querySelector(`#current--${activePlayerIndex}`).textContent =
-    currentScore;
-  document.querySelector(`#total--${activePlayerIndex}`).textContent =
-    totalScores[activePlayerIndex];
-}
-
-// checks weather the current player has reached 100 points that are needed to win
-function hasWon() {
-  if (totalScores[activePlayerIndex] >= 100) {
-    document
-      .querySelector(`.player--${activePlayerIndex}`)
-      .classList.add("player--winner");
-    return true;
-  } else {
-    return false;
-  }
-}
-
 newGameBtn.addEventListener("click", function () {
   document
     .querySelector(`.player--${activePlayerIndex}`)
     .classList.remove("player--winner");
-
-  currentScore = 0;
-  totalScores = [0, 0];
-  activePlayerIndex = 0;
 
   initializeGame();
 });
